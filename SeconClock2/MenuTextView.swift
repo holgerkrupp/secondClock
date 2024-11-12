@@ -24,28 +24,14 @@ struct MenuTextView: View {
         Text(text)
             .onReceive(timer) { _ in
                 self.text = menutext()
-                
-                // migrating from SecondClock1 to 2. by reading the old TimeZone and creating a new one.
-                
-                if getObjectForKeyFromPersistentStorrage("TimeZone") is String{
-                    let tz = UserTimeZone(migration: true)
-                    modelContext.insert(tz)
-
-                    do{
-                        try modelContext.save()
-                    }catch{
-                        print("could not save recovered TZ")
-                    }
-                }
-                // the migration should be removed in September 2024
-                
+                                
             }
             .font(.system(size: 14).monospacedDigit())
          
         
     }
     init(){
-       // let migration = Migration() // migrating from SecondClock1 to 2. by reading the old TimeZone and creating a new one.
+
         
 
         

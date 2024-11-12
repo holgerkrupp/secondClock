@@ -1,0 +1,1 @@
+This is the source code for [SecondClock](https://apps.apple.com/de/app/secondclock-for-the-menu-bar/id1219227160?l=en-GB&mt=12). The app can be found in the [Mac App Store](https://apps.apple.com/de/app/secondclock-for-the-menu-bar/id1219227160?l=en-GB&mt=12).

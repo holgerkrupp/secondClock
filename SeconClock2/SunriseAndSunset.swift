@@ -43,17 +43,24 @@ extension Date {
         //8
         let T = (hour + sun.rightAscension - (0.06571 * approxT) - 6.622)
         
-        //9 -- coerce into UTC
-        var UTC = (T - longitudinalHour(location.coordinate.longitude))
-        if UTC < 0 {
-            UTC += 24
+        //9 -- coerce into UTC while preserving day rollover.
+        let rawUTC = T - longitudinalHour(location.coordinate.longitude)
+        let dayAdjustment = Int(floor(rawUTC / 24.0))
+        var normalizedUTC = rawUTC.truncatingRemainder(dividingBy: 24)
+        if normalizedUTC < 0 {
+            normalizedUTC += 24
         }
-        
+
+        let baseDay = cal.startOfDay(for: self)
+        guard let adjustedBaseDay = cal.date(byAdding: .day, value: dayAdjustment, to: baseDay) else {
+            return nil
+        }
+
         //coerce into NSDate
-        var dateComponents = cal.dateComponents([.day, .month, .year], from: self)
-        dateComponents.hour   = Int(UTC)
-        dateComponents.minute = Int((UTC * 60).truncatingRemainder(dividingBy: 60))
-        dateComponents.second = Int((UTC * 3600).truncatingRemainder(dividingBy: 60))
+        var dateComponents = cal.dateComponents([.day, .month, .year], from: adjustedBaseDay)
+        dateComponents.hour   = Int(normalizedUTC)
+        dateComponents.minute = Int((normalizedUTC * 60).truncatingRemainder(dividingBy: 60))
+        dateComponents.second = Int((normalizedUTC * 3600).truncatingRemainder(dividingBy: 60))
         dateComponents.timeZone = TimeZone(identifier: "UTC")
         
         return cal.date(from: dateComponents)

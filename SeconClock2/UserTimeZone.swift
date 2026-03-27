@@ -175,6 +175,43 @@ class UserTimeZone {
     
 }
 
+extension ModelContext {
+    @discardableResult
+    func normalizeUserTimeZoneOrders(using orderedZones: [UserTimeZone]? = nil) -> Bool {
+        let zones = orderedZones ?? ((try? fetch(FetchDescriptor<UserTimeZone>(sortBy: [SortDescriptor(\.order)]))) ?? [])
+
+        guard !zones.isEmpty else {
+            return false
+        }
+
+        var didChange = false
+
+        for (index, zone) in zones.enumerated() where zone.order != index {
+            zone.order = index
+            didChange = true
+        }
+
+        if didChange {
+            try? save()
+        }
+
+        return didChange
+    }
+
+    func nextUserTimeZoneOrder() -> Int {
+        let descriptor = FetchDescriptor<UserTimeZone>(sortBy: [SortDescriptor(\.order)])
+        let zones = (try? fetch(descriptor)) ?? []
+        return zones.compactMap(\.order).max().map { $0 + 1 } ?? zones.count
+    }
+
+    func insertUserTimeZoneAtEnd(_ timeZone: UserTimeZone) {
+        normalizeUserTimeZoneOrders()
+        timeZone.order = nextUserTimeZoneOrder()
+        insert(timeZone)
+        try? save()
+    }
+}
+
 func getObjectForKeyFromPersistentStorrage(_ key:String) -> Any?{
     
     if let object = UserDefaults.standard.object(forKey: key){

@@ -8,70 +8,73 @@
 import SwiftUI
 import SwiftData
 
-class Timetravel: ObservableObject{
-    @Published var offset:TimeInterval = 0.0
-    
-}
-
-
 struct UserTimeZoneListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Query(sort: [SortDescriptor(\UserTimeZone.order)]) private var timeZones: [UserTimeZone]
 
-    @Query private var timeZones: [UserTimeZone]
-    var body: some View {
-        
-        @State var timetravel = Timetravel()
-     //   List(timeZones, id: \.self){
-        
-      //  Text("TimeTravel: \(timetravel.offset.description)")
-        List{
-            ForEach(timeZones.sorted(by: {$0.order ?? 0 < $1.order ?? 0})) { zone in
-                
-                //   UserTimeZoneView(tz: $0)
-                UserTimeZoneView(tz: zone)
-                
-                if let sunset = zone.sunset, let sunrise = zone.sunrise{
-                    DayTimeSliderView(sunrise: sunrise, sunset: sunset,now: zone.date)
-                    
-                        .padding([.bottom])
-                    
+    private var sortedTimeZones: [UserTimeZone] {
+        Array(timeZones.enumerated())
+            .sorted { lhs, rhs in
+                let leftOrder = lhs.element.order ?? Int.max
+                let rightOrder = rhs.element.order ?? Int.max
+
+                if leftOrder != rightOrder {
+                    return leftOrder < rightOrder
                 }
-                
+
+                return lhs.offset < rhs.offset
             }
-            .onMove( perform: move )
-        }
-        .environmentObject(timetravel)
-            if timeZones.count == 0{
-                Text("no TimeZones saved")
+            .map(\.element)
+    }
+
+    private var orderSignature: String {
+        sortedTimeZones
+            .map { "\($0.identifier ?? $0.readName()):\($0.order.map(String.init) ?? "nil")" }
+            .joined(separator: "|")
+    }
+
+    var body: some View {
+        Group {
+            if sortedTimeZones.isEmpty {
+                VStack(spacing: 10) {
+                    Image(systemName: "globe.europe.africa.fill")
+                        .font(.system(size: 28))
+                        .foregroundStyle(.secondary)
+
+                    Text("No clocks saved yet")
+                        .font(.headline)
+
+                    Text("Search for a place above, then add it to keep it in your menu bar.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: 240)
+                }
+                .frame(maxWidth: .infinity, minHeight: 240)
+                .background(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .fill(Color.black.opacity(0.12))
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
+                }
+            } else {
+                VStack(spacing: 10) {
+                    ForEach(sortedTimeZones) { zone in
+                        UserTimeZoneView(tz: zone)
+                    }
+                }
+                .padding(.vertical, 2)
+                .background(Color.clear)
             }
-        
-    }
-    
-    
-    private func move( from source: IndexSet, to destination: Int)
-    {
-        // Make an array of items from fetched results
-        var revisedItems: [ UserTimeZone  ] = timeZones.map{ $0 }
-        
-        // change the order of the items in the array
-        revisedItems.move(fromOffsets: source, toOffset: destination )
-        
-        // update the userOrder attribute in revisedItems to
-        // persist the new order. This is done in reverse order
-        // to minimize changes to the indices.
-        for reverseIndex in stride( from: revisedItems.count - 1,
-                                    through: 0,
-                                    by: -1 )
-        {
-            revisedItems[ reverseIndex ].order =
-            Int( reverseIndex )
+        }
+        .task(id: orderSignature) {
+            modelContext.normalizeUserTimeZoneOrders(using: sortedTimeZones)
         }
     }
-    
 }
 
 #Preview {
     UserTimeZoneListView()
 }
-
-

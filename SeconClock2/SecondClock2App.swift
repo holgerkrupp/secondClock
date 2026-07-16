@@ -168,6 +168,8 @@ private final class FloatingStatusBarController: NSObject {
     private let statusItem: NSStatusItem
     private let panel: FloatingMenuBarPanel
     private var titleTimer: Timer?
+    private var isPanelPresented = false
+    private var lastRenderedTitle: String?
 
     init(modelContainer: ModelContainer) {
         self.modelContainer = modelContainer
@@ -197,6 +199,9 @@ private final class FloatingStatusBarController: NSObject {
         let hostingView = NSHostingView(rootView: rootView)
         hostingView.frame = CGRect(origin: .zero, size: panel.frame.size)
         hostingView.autoresizingMask = [.width, .height]
+        panel.onDismiss = { [weak self] in
+            self?.isPanelPresented = false
+        }
         panel.contentView = hostingView
     }
 
@@ -215,8 +220,8 @@ private final class FloatingStatusBarController: NSObject {
     }
 
     @objc private func togglePanel() {
-        if panel.isVisible {
-            panel.orderOut(nil)
+        if isPanelPresented {
+            closePanel()
         } else {
             showPanel()
         }
@@ -248,8 +253,14 @@ private final class FloatingStatusBarController: NSObject {
             CGRect(origin: NSPoint(x: originX, y: originY), size: panelSize),
             display: false
         )
+        isPanelPresented = true
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)
+    }
+
+    private func closePanel() {
+        isPanelPresented = false
+        panel.orderOut(nil)
     }
 
     private func preferredPanelSize(for visibleFrame: CGRect) -> CGSize {
@@ -263,16 +274,29 @@ private final class FloatingStatusBarController: NSObject {
             return
         }
 
+        let title = currentMenuBarText()
+
+        // The 0.5 s timer fires far more often than the displayed text changes
+        // (no seconds are shown). Reassigning the title forces a status-bar
+        // relayout every tick, which makes the item visibly wobble. Skip the
+        // work unless the text actually changed.
+        guard title != lastRenderedTitle else {
+            return
+        }
+        lastRenderedTitle = title
+
         let attributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.monospacedDigitSystemFont(ofSize: 14, weight: .medium),
             .foregroundColor: NSColor.labelColor
         ]
 
+        // Setting the title auto-sizes a variableLength status item; calling
+        // sizeToFit() on top of that fights the status bar's own layout and
+        // causes a sub-pixel jitter, so it is intentionally omitted.
         button.attributedTitle = NSAttributedString(
-            string: currentMenuBarText(),
+            string: title,
             attributes: attributes
         )
-        button.sizeToFit()
     }
 
     private func currentMenuBarText() -> String {
@@ -297,6 +321,8 @@ private final class FloatingStatusBarController: NSObject {
 
 @MainActor
 private final class FloatingMenuBarPanel: NSPanel {
+    var onDismiss: (() -> Void)?
+
     init() {
         super.init(
             contentRect: CGRect(
@@ -319,7 +345,7 @@ private final class FloatingMenuBarPanel: NSPanel {
         hasShadow = false
         backgroundColor = .clear
         isMovable = false
-        hidesOnDeactivate = true
+        hidesOnDeactivate = false
     }
 
     override var canBecomeKey: Bool {
@@ -332,10 +358,15 @@ private final class FloatingMenuBarPanel: NSPanel {
 
     override func resignKey() {
         super.resignKey()
-        orderOut(nil)
+        dismiss(nil)
     }
 
     override func cancelOperation(_ sender: Any?) {
+        dismiss(sender)
+    }
+
+    private func dismiss(_ sender: Any?) {
         orderOut(sender)
+        onDismiss?()
     }
 }

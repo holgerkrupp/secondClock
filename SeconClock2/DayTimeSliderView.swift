@@ -60,18 +60,20 @@ struct DayTimeSliderView: View {
     private let halfDay: TimeInterval = 12 * 60 * 60
     private let relativeDayOffsets: [TimeInterval] = [-24 * 60 * 60, 0, 24 * 60 * 60]
     private let trackHeight: CGFloat = 0
+    // Night clock face from the app icon: deep navy blue.
     private let nightTrackGradient = LinearGradient(
         colors: [
-            Color(red: 0.03, green: 0.05, blue: 0.09),
-            Color(red: 0.09, green: 0.12, blue: 0.18)
+            Color(red: 0.05, green: 0.08, blue: 0.20),
+            Color(red: 0.11, green: 0.16, blue: 0.33)
         ],
         startPoint: .leading,
         endPoint: .trailing
     )
+    // Day clock face from the app icon: light sky blue.
     private let daylightGradient = LinearGradient(
         colors: [
-            Color(red: 1.00, green: 0.97, blue: 0.79),
-            Color(red: 1.00, green: 0.87, blue: 0.46)
+            Color(red: 0.55, green: 0.81, blue: 0.98),
+            Color(red: 0.35, green: 0.64, blue: 0.92)
         ],
         startPoint: .leading,
         endPoint: .trailing
@@ -262,7 +264,7 @@ struct DayTimeSliderView: View {
                             }
                             .frame(width: segmentWidth)
                             .offset(x: width * range.lowerBound)
-                            .shadow(color: Color(red: 0.98, green: 0.79, blue: 0.30).opacity(0.28), radius: 10, y: 0)
+                            .shadow(color: Color(red: 0.45, green: 0.72, blue: 0.96).opacity(0.30), radius: 10, y: 0)
                     }
 
                     ForEach(visibleSolarEvents) { placement in

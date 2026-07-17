@@ -14,7 +14,26 @@ struct SearchView: View {
 
     @ObservedObject var locVM: LocationManager = LocationManager.shared
 
-    let specialTimeZones = ["", "UTC", ".beat", "UNIX Timestamp", "New Earth Time", "Eternal September"]
+    let specialTimeZones = [
+        "",
+        "UTC",
+        "Japanese Imperial Year",
+        "French Revolutionary Date",
+        "French Decimal Time",
+        "Discordian Date",
+        "Holocene Date",
+        "Maya Long Count",
+        "ISO Week Date",
+        "Ordinal Date",
+        "Julian Date",
+        "Modified Julian Date",
+        "Mars Time",
+        "Greenwich Sidereal Time",
+        ".beat",
+        "UNIX Timestamp",
+        "New Earth Time",
+        "Eternal September"
+    ]
 
     @State var selectedSpecialZone: String = ""
 
